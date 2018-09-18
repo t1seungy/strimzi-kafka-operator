@@ -29,6 +29,10 @@ spec:
           name: "kafka_server_$1_$2_total"
           labels:
             topic: "$3"
+    logging:
+      type: inline
+      loggers:
+        kafka.root.logger.level: "INFO"
   zookeeper:
     replicas: 3
     readinessProbe:
