@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static io.strimzi.test.k8s.BaseKubeClient.STATEFUL_SET;
 import static junit.framework.TestCase.assertTrue;
 
 @RunWith(StrimziRunner.class)
@@ -18,14 +19,18 @@ public class LogLevelST extends AbstractST {
     static final String NAMESPACE = "log-level-cluster-test";
     private static final Logger LOGGER = LogManager.getLogger(LogLevelST.class);
     private static final String TESTED_LOGGER = "kafka.root.logger.level";
-    private static final String RESOURCE_TYPE = "statefulset";
     private static final String POD_NAME = kafkaClusterName(CLUSTER_NAME) + "-0";
 
     @Test
     public void testLogLevelInfo() {
         LOGGER.info("Running testLogLevelInfo in namespace {}", NAMESPACE);
         String logLevel = "INFO";
+
+        kubeClient.deleteByName(STATEFUL_SET, kafkaClusterName(CLUSTER_NAME));
+        kubeClient.waitForResourceDeletion(STATEFUL_SET, kafkaClusterName(CLUSTER_NAME));
+
         createKafkaPods(logLevel);
+
         assertTrue("Kafka's log level is set properly", checkKafkaLogLevel(logLevel));
     }
 
@@ -33,6 +38,7 @@ public class LogLevelST extends AbstractST {
     public void testLogLevelError() {
         LOGGER.info("Running testLogLevelError in namespace {}", NAMESPACE);
         String logLevel = "ERROR";
+
         createKafkaPods(logLevel);
         assertTrue("Kafka's log level is set properly", checkKafkaLogLevel(logLevel));
     }
@@ -41,6 +47,7 @@ public class LogLevelST extends AbstractST {
     public void testLogLevelWarn() {
         LOGGER.info("Running testLogLevelWarn in namespace {}", NAMESPACE);
         String logLevel = "WARN";
+
         createKafkaPods(logLevel);
         assertTrue("Kafka's log level is set properly", checkKafkaLogLevel(logLevel));
     }
@@ -82,8 +89,8 @@ public class LogLevelST extends AbstractST {
         String kafkaPodLog = kubeClient.logs(POD_NAME, "kafka");
         boolean result = kafkaPodLog.contains("level=" + logLevel);
 
-        if(!result) {
-            kafkaPodLog = kubeClient.searchInLog(RESOURCE_TYPE, kafkaClusterName(CLUSTER_NAME), 600, "ERROR");
+        if(result) {
+            kafkaPodLog = kubeClient.searchInLog(STATEFUL_SET, kafkaClusterName(CLUSTER_NAME), 600, "ERROR");
             result = kafkaPodLog.isEmpty();
         }
 
@@ -92,6 +99,7 @@ public class LogLevelST extends AbstractST {
 
     private void createKafkaPods(String logLevel) {
         LOGGER.info("Create kafka in {} for testing logger: {}={}", CLUSTER_NAME, TESTED_LOGGER, logLevel);
+
         resources().kafka(resources().defaultKafka(CLUSTER_NAME, 1)
                 .editSpec()
                 .editKafka().
