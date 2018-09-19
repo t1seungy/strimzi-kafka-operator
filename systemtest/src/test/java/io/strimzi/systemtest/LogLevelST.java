@@ -25,12 +25,7 @@ public class LogLevelST extends AbstractST {
     public void testLogLevelInfo() {
         LOGGER.info("Running testLogLevelInfo in namespace {}", NAMESPACE);
         String logLevel = "INFO";
-
-        kubeClient.deleteByName(STATEFUL_SET, kafkaClusterName(CLUSTER_NAME));
-        kubeClient.waitForResourceDeletion(STATEFUL_SET, kafkaClusterName(CLUSTER_NAME));
-
         createKafkaPods(logLevel);
-
         assertTrue("Kafka's log level is set properly", checkKafkaLogLevel(logLevel));
     }
 
