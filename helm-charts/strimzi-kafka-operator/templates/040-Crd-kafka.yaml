@@ -379,6 +379,21 @@ spec:
                             memory:
                               type: string
                               pattern: '[0-9]+([kKmMgGtTpPeE]i?)?$'
+                template:
+                  type: object
+                  properties:
+                    statefulset:
+                      type: object
+                      properties: {}
+                    pods:
+                      type: object
+                      properties: {}
+                    service:
+                      type: object
+                      properties: {}
+                    headlessService:
+                      type: object
+                      properties: {}
               required:
               - replicas
               - storage
@@ -690,6 +705,21 @@ spec:
                             memory:
                               type: string
                               pattern: '[0-9]+([kKmMgGtTpPeE]i?)?$'
+                template:
+                  type: object
+                  properties:
+                    statefulset:
+                      type: object
+                      properties: {}
+                    pods:
+                      type: object
+                      properties: {}
+                    service:
+                      type: object
+                      properties: {}
+                    headlessService:
+                      type: object
+                      properties: {}
               required:
               - replicas
               - storage

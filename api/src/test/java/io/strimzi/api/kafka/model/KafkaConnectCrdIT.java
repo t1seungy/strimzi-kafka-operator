@@ -83,4 +83,9 @@ public class KafkaConnectCrdIT extends AbstractCrdIT {
     public void testKafkaWithScramSha512Auth() {
         createDelete(KafkaConnect.class, "KafkaConnect-with-scram-sha-512-auth.yaml");
     }
+
+    @Test
+    public void testKafkaWithTemplate() {
+        createDelete(KafkaConnect.class, "KafkaConnect-with-template.yaml");
+    }
 }
