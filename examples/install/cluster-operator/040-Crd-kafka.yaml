@@ -381,13 +381,13 @@ spec:
                     statefulset:
                       type: object
                       properties: {}
-                    service:
-                      type: object
-                      properties: {}
-                    headlessService:
-                      type: object
-                      properties: {}
                     pod:
+                      type: object
+                      properties: {}
+                    bootstrapService:
+                      type: object
+                      properties: {}
+                    brokersService:
                       type: object
                       properties: {}
               required:
@@ -707,13 +707,13 @@ spec:
                     statefulset:
                       type: object
                       properties: {}
-                    service:
-                      type: object
-                      properties: {}
-                    headlessService:
-                      type: object
-                      properties: {}
                     pod:
+                      type: object
+                      properties: {}
+                    clientService:
+                      type: object
+                      properties: {}
+                    nodesService:
                       type: object
                       properties: {}
               required:
