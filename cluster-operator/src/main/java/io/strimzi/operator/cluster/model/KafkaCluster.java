@@ -62,6 +62,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import static io.strimzi.operator.cluster.model.ModelUtils.DEFAULT_KAFKA_VERSION;
+import static io.strimzi.operator.cluster.model.ModelUtils.parseImageMap;
 import static java.util.Collections.singletonList;
 
 public class KafkaCluster extends AbstractModel {
@@ -123,6 +125,8 @@ public class KafkaCluster extends AbstractModel {
     private static final String SECRET_CLIENTS_PUBLIC_KEY_SUFFIX = "-clients-ca-cert";
 
     protected static final String METRICS_AND_LOG_CONFIG_SUFFIX = NAME_SUFFIX + "-config";
+
+    public static final Map<String, String> IMAGE_MAP = parseImageMap(System.getenv().get("STRIMZI_KAFKA_IMAGE_MAP"));
 
     // Kafka configuration
     private String zookeeperConnect;
@@ -240,7 +244,14 @@ public class KafkaCluster extends AbstractModel {
         result.setOwnerReference(kafkaAssembly);
         KafkaClusterSpec kafkaClusterSpec = kafkaAssembly.getSpec().getKafka();
         result.setReplicas(kafkaClusterSpec.getReplicas());
+        String version = kafkaClusterSpec.getVersion();
+        if (version == null) {
+            version = DEFAULT_KAFKA_VERSION;
+        }
         String image = kafkaClusterSpec.getImage();
+        if (image == null) {
+            image = IMAGE_MAP.get(version);
+        }
         if (image == null) {
             image = KafkaClusterSpec.DEFAULT_IMAGE;
         }

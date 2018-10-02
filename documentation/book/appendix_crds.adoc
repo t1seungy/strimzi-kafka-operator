@@ -46,7 +46,7 @@ Used in: xref:type-KafkaSpec-{context}[`KafkaSpec`]
 |Field                       |Description
 |replicas             1.2+<.<|The number of pods in the cluster.
 |integer
-|image                1.2+<.<|The docker image for the pods.
+|image                1.2+<.<|The docker image for the pods. The default value depends on the configured `Kafka.spec.kafka.version`.
 |string
 |storage              1.2+<.<|Storage configuration (disk). Cannot be updated. The type depends on the value of the `storage.type` property within the given object, which must be one of [ephemeral, persistent-claim].
 |xref:type-EphemeralStorage-{context}[`EphemeralStorage`], xref:type-PersistentClaimStorage-{context}[`PersistentClaimStorage`]
@@ -82,6 +82,8 @@ Used in: xref:type-KafkaSpec-{context}[`KafkaSpec`]
 |xref:type-InlineLogging-{context}[`InlineLogging`], xref:type-ExternalLogging-{context}[`ExternalLogging`]
 |tlsSidecar           1.2+<.<|TLS sidecar configuration.
 |xref:type-Sidecar-{context}[`Sidecar`]
+|version              1.2+<.<|The kafka broker version. Defaults to 2.0.0. Consult the user documentation to understand the process required to upgrade or downgrade the version.
+|string
 |====
 
 [id='type-EphemeralStorage-{context}']

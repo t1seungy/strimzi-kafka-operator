@@ -44,6 +44,7 @@ public class KafkaClusterSpec implements Serializable {
 
     public static final String DEFAULT_IMAGE =
             System.getenv().getOrDefault("STRIMZI_DEFAULT_KAFKA_IMAGE", "strimzi/kafka:latest");
+
     public static final String DEFAULT_INIT_IMAGE =
             System.getenv().getOrDefault("STRIMZI_DEFAULT_KAFKA_INIT_IMAGE", "strimzi/kafka-init:latest");
     public static final String DEFAULT_TLS_SIDECAR_IMAGE =
@@ -54,6 +55,8 @@ public class KafkaClusterSpec implements Serializable {
             + "zookeeper.connect, zookeeper.set.acl, authorizer., super.user";
 
     protected Storage storage;
+
+    private String version;
 
     private Map<String, Object> config = new HashMap<>(0);
 
@@ -76,6 +79,16 @@ public class KafkaClusterSpec implements Serializable {
     private KafkaListeners listeners;
     private KafkaAuthorization authorization;
     private Map<String, Object> additionalProperties = new HashMap<>(0);
+
+    @Description("The kafka broker version. Defaults to 2.0.0. " +
+            "Consult the user documentation to understand the process required to upgrade or downgrade the version.")
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
 
     @Description("The kafka broker config. Properties with the following prefixes cannot be set: " + FORBIDDEN_PREFIXES)
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -149,7 +162,7 @@ public class KafkaClusterSpec implements Serializable {
         this.replicas = replicas;
     }
 
-    @Description("The docker image for the pods.")
+    @Description("The docker image for the pods. The default value depends on the configured `Kafka.spec.kafka.version`.")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public String getImage() {
         return image;

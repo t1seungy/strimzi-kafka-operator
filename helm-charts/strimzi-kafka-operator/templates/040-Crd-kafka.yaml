@@ -379,6 +379,8 @@ spec:
                             memory:
                               type: string
                               pattern: '[0-9]+([kKmMgGtTpPeE]i?)?$'
+                version:
+                  type: string
               required:
               - replicas
               - storage
