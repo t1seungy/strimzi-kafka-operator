@@ -73,16 +73,27 @@ public class AbstractNewST {
     protected static final String TLS_SIDECAR_KAFKA_IMAGE = "STRIMZI_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE";
     protected static final String TLS_SIDECAR_EO_IMAGE = "STRIMZI_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE";
 
-    public static KubeClusterResource cluster = new KubeClusterResource();
+    public static KubeClusterResource cluster;
 
-    static DefaultKubernetesClient client = new DefaultKubernetesClient();
-    static KubeClient<?> kubeClient = cluster.client();
+    static {
+        cluster = new KubeClusterResource();
+    }
+
+    static DefaultKubernetesClient client;
+
+    static {
+        client = new DefaultKubernetesClient();
+    }
+
+    static KubeClient<?> kubeClient;
+
+    static {
+        kubeClient = cluster.client();
+    }
+
     private Resources resources;
 
     protected static NamespacedKubernetesClient namespacedClient() {
-//        System.out.println("abstract");
-//        System.out.println(kubeClient.namespace());
-//        System.out.println(kubeClient.hashCode());
         return client.inNamespace(kubeClient.namespace());
     }
 

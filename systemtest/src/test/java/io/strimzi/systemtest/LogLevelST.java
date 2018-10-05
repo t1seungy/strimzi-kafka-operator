@@ -7,9 +7,11 @@ package io.strimzi.systemtest;
 import io.strimzi.test.ClusterOperator;
 import io.strimzi.test.JUnitGroup;
 import io.strimzi.test.Namespace;
+import io.strimzi.test.OpenShiftOnly;
 import io.strimzi.test.StrimziExtension;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -19,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(StrimziExtension.class)
 @Namespace(LogLevelST.NAMESPACE)
 @ClusterOperator
+@OpenShiftOnly
 class LogLevelST extends AbstractNewST {
     static final String NAMESPACE = "log-level-cluster-test";
     private static final Logger LOGGER = LogManager.getLogger(LogLevelST.class);
@@ -26,7 +29,6 @@ class LogLevelST extends AbstractNewST {
     private static final String POD_NAME = kafkaClusterName(CLUSTER_NAME) + "-0";
 
     @Test
-    @JUnitGroup(name = "regression")
     void testLogLevelInfo() {
         String logLevel = "INFO";
         LOGGER.info("Running testLogLevelInfo in namespace {}", NAMESPACE);
@@ -35,6 +37,7 @@ class LogLevelST extends AbstractNewST {
     }
 
     @Test
+    @Tag("jebem")
     @JUnitGroup(name = "release")
     void testLogLevelError() {
         String logLevel = "ERROR";
@@ -44,6 +47,7 @@ class LogLevelST extends AbstractNewST {
     }
 
     @Test
+    @Tag("jebem")
     @JUnitGroup(name = "release")
     void testLogLevelWarn() {
         String logLevel = "WARN";
@@ -53,6 +57,7 @@ class LogLevelST extends AbstractNewST {
     }
 
     @Test
+    @Tag("jebem")
     @JUnitGroup(name = "release")
     void testLogLevelTrace() {
         String logLevel = "TRACE";
@@ -62,6 +67,7 @@ class LogLevelST extends AbstractNewST {
     }
 
     @Test
+    @Tag("jebem")
     @JUnitGroup(name = "release")
     void testLogLevelDebug() {
         String logLevel = "DEBUG";
@@ -71,6 +77,7 @@ class LogLevelST extends AbstractNewST {
     }
 
     @Test
+    @Tag("jebem")
     @JUnitGroup(name = "release")
     void testLogLevelFatal() {
         String logLevel = "FATAL";
@@ -80,6 +87,7 @@ class LogLevelST extends AbstractNewST {
     }
 
     @Test
+    @Tag("jebem")
     @JUnitGroup(name = "release")
     void testLogLevelOff() {
         String logLevel = "OFF";
