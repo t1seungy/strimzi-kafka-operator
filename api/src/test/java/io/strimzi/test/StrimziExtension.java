@@ -16,11 +16,12 @@ import io.strimzi.test.k8s.OpenShift;
 import io.strimzi.test.k8s.Minishift;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.ClassRule;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
@@ -28,7 +29,6 @@ import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.annotation.Repeatable;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -55,7 +55,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
-public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, AfterEachCallback, BeforeEachCallback, ExecutionCondition {
+public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, AfterEachCallback, BeforeEachCallback,
+        ExecutionCondition, AfterTestExecutionCallback, BeforeTestExecutionCallback {
     private static final Logger LOGGER = LogManager.getLogger(StrimziExtension.class);
 
     public static final String KAFKA_PERSISTENT_YAML = "../examples/kafka/kafka-persistent.yaml";
@@ -75,6 +76,11 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
     public static final String LIMITS_CPU = "1000m";
     public static final String OPERATOR_LOG_LEVEL = "INFO";
     public static final String NOTEARDOWN = "NOTEARDOWN";
+    private static final String DEFAULT_TAG = "all";
+    private static final String TAG_LIST_NAME = "tags";
+    private static final String START_TIME = "start time";
+
+    private static long startTime;
 
     private KubeClusterResource clusterResource;
     private Class testClass;
@@ -85,14 +91,12 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
     }
 
     @Override
-    public void afterAll(ExtensionContext context) throws Exception {
-        System.out.println("after all call");
+    public void afterAll(ExtensionContext context) {
         deleteResource((Bracket) classStatement);
     }
 
     @Override
-    public void beforeAll(ExtensionContext context) throws Exception {
-        System.out.println("before all call");
+    public void beforeAll(ExtensionContext context) {
         testClass = context.getTestClass().orElse(null);
 
         if (!areAllChildrenIgnored()) {
@@ -108,8 +112,8 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
                 }
             };
             classStatement = withClusterOperator(testClass, classStatement);
-            classStatement = withNamespaces(testClass, classStatement);
             classStatement = withResources(testClass, classStatement);
+            classStatement = withNamespaces(testClass, classStatement);
             classStatement = withLogging(testClass, classStatement);
             try {
                 Bracket current = (Bracket) classStatement;
@@ -123,22 +127,13 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
         }
     }
 
-    private void deleteResource(Bracket resource) {
-        if (resource != null) {
-            deleteResource((Bracket) resource.statement);
-            resource.after();
-        }
-    }
-
     @Override
-    public void afterEach(ExtensionContext context) throws Exception {
-        System.out.println("after each call");
+    public void afterEach(ExtensionContext context) {
         deleteResource((Bracket) methodStatement);
     }
 
     @Override
-    public void beforeEach(ExtensionContext context) throws Exception {
-        System.out.println("before each call");
+    public void beforeEach(ExtensionContext context) {
         Method testMethod = context.getTestMethod().get();
 
         methodStatement = new Bracket(null, () -> e -> {
@@ -154,8 +149,8 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
         };
 
         methodStatement = withClusterOperator(testMethod, methodStatement);
-        methodStatement = withNamespaces(testMethod, methodStatement);
         methodStatement = withResources(testMethod, methodStatement);
+        methodStatement = withNamespaces(testMethod, methodStatement);
         methodStatement = withLogging(testMethod, methodStatement);
         try {
             Bracket current = (Bracket) methodStatement;
@@ -168,10 +163,6 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
         }
     }
 
-    protected boolean isIgnored(Method method) {
-        return isWrongClusterType(method) || isIgnoredByTestGroup(method);
-    }
-
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
         if (!isIgnoredByTag(context)) {
@@ -179,6 +170,32 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
         }
         return ConditionEvaluationResult.disabled("Test method is disabled");
     }
+
+    private void deleteResource(Bracket resource) {
+        if (resource != null) {
+            deleteResource((Bracket) resource.statement);
+            resource.after();
+        }
+    }
+
+    @Override
+    public void afterTestExecution(ExtensionContext extensionContext) throws Exception {
+//        Method testMethod = extensionContext.getRequiredTestMethod();
+//        long startTime = getStore(extensionContext).remove(START_TIME, long.class);
+//        long duration = System.currentTimeMillis() - startTime;
+//
+//        LOGGER.info(() -> String.format("Method [%s] took %s ms.", testMethod.getName(), duration));
+    }
+
+    @Override
+    public void beforeTestExecution(ExtensionContext extensionContext) throws Exception {
+        startTime = System.currentTimeMillis();
+    }
+
+    public static int getRuntimeInSeconds() {
+        return (int) (System.currentTimeMillis() - startTime * 1000);
+    }
+
 
     abstract class Bracket extends Statement implements Runnable {
         public final Statement statement;
@@ -271,7 +288,6 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
     }
 
     private boolean isWrongClusterType(AnnotatedElement element) {
-        System.out.println("hahahahahaha");
         boolean result = element.getAnnotation(OpenShiftOnly.class) != null
                 && !(clusterResource().cluster() instanceof OpenShift
                 || clusterResource().cluster() instanceof Minishift);
@@ -281,40 +297,12 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
                     name(element)
             );
         }
-        if (element.getAnnotation(OpenShiftOnly.class) != null) {
-            System.out.println("Openshit only");
-        }
-
         return result;
-    }
-
-    @Deprecated
-    private boolean isIgnoredByTestGroup(Method testMethod) {
-        System.out.println(testMethod.getName());
-        System.out.println(java.util.Arrays.toString(testMethod.getDeclaredAnnotations()));
-        JUnitGroup testGroup = testMethod.getAnnotation(JUnitGroup.class);
-        if (testGroup == null) {
-            return false;
-        }
-        System.out.println("IsIgnoredByTetGroup: " + testGroup.systemProperty());
-        Collection<String> enabledGroups = getEnabledGroups(testGroup.systemProperty());
-        Collection<String> declaredGroups = getDeclaredGroups(testGroup);
-        System.out.println("Enabled tags: " + getEnabledTags("tags"));
-        if (isGroupEnabled(enabledGroups, declaredGroups)) {
-            LOGGER.info("Test group {} is enabled for method {}. Enabled test groups: {}",
-                    declaredGroups, testMethod.getName(), enabledGroups);
-            return false;
-        }
-        LOGGER.info("None of the test groups {} are enabled for method {}. Enabled test groups: {}",
-                declaredGroups, testMethod.getName(), enabledGroups);
-        return true;
     }
 
     private boolean isIgnoredByTag(ExtensionContext context) {
         Collection<String> declaredTags = context.getTags();
-        Collection<String> enabledTags = getEnabledTags("tags");
-        System.out.println(declaredTags);
-        System.out.println(enabledTags);
+        Collection<String> enabledTags = getEnabledTags();
         if (declaredTags.isEmpty()) {
             LOGGER.info("Test method {} does not have any tag restrictions", context.getDisplayName());
             return false;
@@ -332,29 +320,13 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
      */
     private KubeClusterResource clusterResource() {
         if (clusterResource == null) {
-            if (testClass.getAnnotation(ClassRule.class) != null) {
-                for (Field field : testClass.getFields()) {
-                    if (field.getAnnotation(ClassRule.class) != null) {
-                        try {
-                            clusterResource = (KubeClusterResource) field.get(KubeClusterResource.class);
-                        } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
+            try {
+                Field field = testClass.getField("cluster");
+                clusterResource = (KubeClusterResource) field.get(KubeClusterResource.class);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                e.printStackTrace();
             }
-            if (clusterResource == null) {
-                Field field = null;
-                try {
-                    field = testClass.getField("cluster");
-                    clusterResource = (KubeClusterResource) field.get(KubeClusterResource.class);
-                } catch (NoSuchFieldException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
 
-            }
             if (clusterResource == null) {
                 clusterResource = new KubeClusterResource();
                 clusterResource.before();
@@ -363,20 +335,8 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
         return clusterResource;
     }
 
-    @Deprecated
-    private static Collection<String> getEnabledGroups(String key) {
-        return splitProperties((String) System.getProperties().getOrDefault(key, JUnitGroup.ALL_GROUPS));
-    }
-
-    private static Collection<String> getEnabledTags(String key) {
-        return splitProperties((String) System.getProperties().getOrDefault(key, "all"));
-    }
-
-    @Deprecated
-    private static Collection<String> getDeclaredGroups(JUnitGroup testGroup) {
-        String[] declaredGroups = testGroup.name();
-        System.out.println("GetDeclaredGroups: " + declaredGroups);
-        return new HashSet<>(Arrays.asList(declaredGroups));
+    private static Collection<String> getEnabledTags() {
+        return splitProperties((String) System.getProperties().getOrDefault(TAG_LIST_NAME, DEFAULT_TAG));
     }
 
     private static Collection<String> splitProperties(String commaSeparated) {
@@ -386,31 +346,8 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
         return new HashSet<>(Arrays.asList(commaSeparated.split(",+")));
     }
 
-    /**
-     * A test group is enabled if {@link JUnitGroup#ALL_GROUPS} is defined or
-     * the declared test groups contain at least one defined test group
-     *
-     * @param enabledGroups  Test groups that are enabled for execution.
-     * @param declaredGroups Test groups that are declared in the {@link JUnitGroup} annotation.
-     * @return boolean name with actual status
-     */
-    @Deprecated
-    private static boolean isGroupEnabled(Collection<String> enabledGroups, Collection<String> declaredGroups) {
-        System.out.println(enabledGroups.toString());
-        System.out.println(declaredGroups.toString());
-        if (enabledGroups.contains(JUnitGroup.ALL_GROUPS) || (enabledGroups.isEmpty() && declaredGroups.isEmpty())) {
-            return true;
-        }
-        for (String enabledGroup : enabledGroups) {
-            if (declaredGroups.contains(enabledGroup)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static boolean isTagEnabled(Collection<String> declaredTags, Collection<String> enabledTags) {
-        if (enabledTags.contains("all") || enabledTags.isEmpty()) {
+        if (enabledTags.contains(DEFAULT_TAG) || enabledTags.isEmpty()) {
             return true;
         }
         for (String enabledTag : enabledTags) {
@@ -429,7 +366,7 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
         return clusterResource().helmClient();
     }
 
-    String getContent(File file, Consumer<JsonNode> edit) {
+    private String getContent(File file, Consumer<JsonNode> edit) {
         YAMLMapper mapper = new YAMLMapper();
         try {
             JsonNode node = mapper.readTree(file);
@@ -562,47 +499,51 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
         }
     }
 
-    @Deprecated
-    private Annotation getAnnotation(Object object, Class annotationType) {
-        if (object instanceof Class) {
-            return ((Class) object).getAnnotation(annotationType);
-        } else {
-            return ((Method) object).getAnnotation(annotationType);
-        }
-    }
-
     /**
      * Get the (possibly @Repeatable) annotations on the given element.
      *
-     * @param a
+     * @param annotatedElement
      * @param annotationType
      * @param <A>
      * @return
      */
-    <A extends Annotation> List<A> annotations(AnnotatedElement a, Class<A> annotationType) {
+    @SuppressWarnings("unchecked")
+    <A extends Annotation> List<A> annotations(AnnotatedElement annotatedElement, Class<A> annotationType) {
         final List<A> list;
-        A c = a.getAnnotation(annotationType);
-        if (c != null) {
-            list = singletonList(c);
+        A annotation = annotatedElement.getAnnotation(annotationType);
+
+        if (annotation != null) {
+            list = singletonList(annotation);
         } else {
-            Repeatable r = annotationType.getAnnotation(Repeatable.class);
-            if (r != null) {
-                Class<? extends Annotation> ra = r.value();
-                Annotation container = a.getAnnotation(annotationType);
-                if (container != null) {
-                    try {
-                        Method value = ra.getDeclaredMethod("value");
-                        list = asList((A[]) value.invoke(container));
-                    } catch (ReflectiveOperationException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    list = emptyList();
-                }
+            A[] annotations = annotatedElement.getAnnotationsByType(annotationType);
+            if (annotations != null) {
+                list = asList(annotations);
             } else {
                 list = emptyList();
             }
+
         }
+//        } else {
+//            Repeatable repeatable = annotationType.getAnnotation(Repeatable.class);
+//            Annotation[] x = annotatedElement.getAnnotationsByType(annotationType);
+//            System.out.println(Arrays.toString(x));
+//            if (repeatable != null) {
+//                Class<? extends Annotation> repeatableAnnotation = repeatable.value();
+//                Annotation container = repeatableAnnotation.getAnnotation(annotationType);
+//                if (container != null) {
+//                    try {
+//                        Method value = repeatableAnnotation.getDeclaredMethod("value");
+//                        list = asList((A[]) value.invoke(container));
+//                    } catch (ReflectiveOperationException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                } else {
+//                    list = emptyList();
+//                }
+//            } else {
+//                list = emptyList();
+//            }
+//        }
 
         return list;
     }
@@ -785,12 +726,11 @@ public class StrimziExtension implements AfterAllCallback, BeforeAllCallback, Af
                 protected void before() {
                     // Here we record the state of the cluster
                     LOGGER.info("Creating resources {}, before test per @Resources annotation on {}", Arrays.toString(resources.value()), name(element));
-
                     kubeClient().create(resources.value());
                 }
 
                 private KubeClient kubeClient() {
-                    KubeClient client = this.kubeClient();
+                    KubeClient client = StrimziExtension.this.kubeClient();
                     if (resources.asAdmin()) {
                         client = client.clientWithAdmin();
                     }

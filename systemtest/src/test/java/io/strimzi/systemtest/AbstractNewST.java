@@ -51,6 +51,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class AbstractNewST {
@@ -299,8 +300,9 @@ public class AbstractNewST {
     }
 
     void assertNoCoErrorsLogged(long sinceSeconds) {
+        LOGGER.info("Search in strimzi-cluster-operator log for errors in last {} seconds", sinceSeconds);
         String clusterOperatorLog = kubeClient.searchInLog("deploy", "strimzi-cluster-operator", sinceSeconds, "Exception", "Error", "Throwable");
-        assertEquals(clusterOperatorLog, logHasNoUnexpectedErrors().toString());
+        assertThat(clusterOperatorLog, logHasNoUnexpectedErrors());
     }
 
     public List<String> listTopicsUsingPodCLI(String clusterName, int zkPodId) {
