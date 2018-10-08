@@ -33,6 +33,7 @@ public abstract class AbstractScalableResourceOperator<C extends KubernetesClien
     public static final String STRIMZI_CLUSTER_OPERATOR_DOMAIN = "operator.strimzi.io";
     public static final String ANNOTATION_GENERATION = STRIMZI_CLUSTER_OPERATOR_DOMAIN + "/generation";
     public static final String ANNOTATION_MANUAL_DELETE_POD_AND_PVC = STRIMZI_CLUSTER_OPERATOR_DOMAIN + "/delete-pod-and-pvc";
+    public static final String ANNOTATION_MANUAL_RESTART = "cluster." + STRIMZI_CLUSTER_OPERATOR_DOMAIN + "/manual-restart";
 
     private final Logger log = LogManager.getLogger(getClass());
 

@@ -59,6 +59,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 
+import static io.strimzi.operator.common.operator.resource.AbstractScalableResourceOperator.ANNOTATION_MANUAL_RESTART;
+
 /**
  * <p>Assembly operator for a "Kafka" assembly, which manages:</p>
  * <ul>
@@ -114,6 +116,7 @@ public class KafkaAssemblyOperator extends AbstractAssemblyOperator<KubernetesCl
                 .compose(state -> state.rollingUpdateForNewCaCert())
 
                 .compose(state -> state.zkManualPodCleaning())
+                .compose(state -> state.zkManualRollingUpdate())
                 .compose(state -> state.getZookeeperState())
                 .compose(state -> state.zkScaleDown())
                 .compose(state -> state.zkService())
@@ -128,6 +131,7 @@ public class KafkaAssemblyOperator extends AbstractAssemblyOperator<KubernetesCl
                 .compose(state -> state.zkHeadlessServiceEndpointReadiness())
 
                 .compose(state -> state.kafkaManualPodCleaning())
+                .compose(state -> state.kafkaManualRollingUpdate())
                 .compose(state -> state.getKafkaClusterDescription())
                 .compose(state -> state.kafkaInitServiceAccount())
                 .compose(state -> state.kafkaInitClusterRoleBinding())
@@ -297,6 +301,42 @@ public class KafkaAssemblyOperator extends AbstractAssemblyOperator<KubernetesCl
                     result.completer()
             );
             return result;
+        }
+
+        Future<ReconciliationState> kafkaManualRollingUpdate() {
+            String reason = "manual restart";
+            Future<StatefulSet> pp = kafkaSetOperations.getAsync(namespace, KafkaCluster.kafkaClusterName(name));
+            if (pp != null) {
+                return pp.compose(ss -> {
+                    if (ss != null) {
+                        String value = ss.getMetadata().getAnnotations().get(ANNOTATION_MANUAL_RESTART);
+                        if (value != null && value.equals("true")) {
+                            log.debug("{}: Rolling StatefulSet {} to {}", reconciliation, ss.getMetadata().getName(), reason);
+                            return kafkaSetOperations.maybeRollingUpdate(ss, true);
+                        }
+                    }
+                    return Future.succeededFuture();
+                }).map(i -> this);
+            }
+            return Future.succeededFuture(this);
+        }
+
+        Future<ReconciliationState> zkManualRollingUpdate() {
+            String reason = "manual restart";
+            Future<StatefulSet> pp = zkSetOperations.getAsync(namespace, ZookeeperCluster.zookeeperClusterName(name));
+            if (pp != null) {
+                return pp.compose(ss -> {
+                    if (ss != null) {
+                        String value = ss.getMetadata().getAnnotations().get(ANNOTATION_MANUAL_RESTART);
+                        if (value != null && value.equals("true")) {
+                            log.debug("{}: Rolling StatefulSet {} to {}", reconciliation, ss.getMetadata().getName(), reason);
+                            return zkSetOperations.maybeRollingUpdate(ss, true);
+                        }
+                    }
+                    return Future.succeededFuture();
+                }).map(i -> this);
+            }
+            return Future.succeededFuture(this);
         }
 
         /**
