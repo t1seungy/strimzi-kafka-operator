@@ -1,0 +1,49 @@
+// Module included in the following assemblies:
+//
+// assembly-todo.adoc
+
+[id='proc-manual-restart-zookeeper-{context}']
+= Manually restart a Zookeeper cluster
+
+This procedure describes how to manually restart an existing Zookeeper cluster by using a {ProductPlatformName} annotation.
+
+.Prerequisites
+
+* A running Zookeeper cluster.
+* A running Cluster Operator.
+
+.Procedure
+
+. Find the name of `StatefulSet` which controls Zookeeper pods to restart.
++
+ifdef::Kubernetes[]
+On {KubernetesName} this can be done using `kubectl describe`:
+[source,shell,subs=+quotes]
+kubectl describe pod _pod-name_
+endif::Kubernetes[]
+
+On {OpenShiftName} this can be done using `oc describe`:
+[source,shell,subs=+quotes]
+oc describe pod _pod-name_
++
+
+. Annotate `StatefulSet` resource in {ProductPlatformName}.
++
+ifdef::Kubernetes[]
+On {KubernetesName} this can be done using `kubectl apply`:
+[source,shell,subs=+quotes]
+kubectl annotate sts _cluster-name_-zookeeper cluster.operator.strimzi.io/manual-restart=true
+endif::Kubernetes[]
++
+On {OpenShiftName} this can be done using `oc annotate`:
+[source,shell,subs=+quotes]
+oc annotate sts _cluster-name_-zookeeper cluster.operator.strimzi.io/manual-restart=true
++
+. Wait for next reconciliation and all pods in annotated `StatefulSet` will be restarted.
+After all pods are restarted the annotation is removed from `StatefulSet`.
+
+
+.Additional resources
+
+* For more information about deploying the Cluster Operator, see xref:cluster-operator-str[].
+* For more information about deploying the Zookeeper cluster, see xref:deploying-zookeeper-cluster-openshift-str[] and xref:deploying-zookeeper-cluster-kubernetes-str[].
