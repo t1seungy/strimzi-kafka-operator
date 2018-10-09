@@ -59,7 +59,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 
-import static io.strimzi.operator.common.operator.resource.AbstractScalableResourceOperator.ANNOTATION_MANUAL_RESTART;
+import static io.strimzi.operator.cluster.ClusterOperator.STRIMZI_CLUSTER_OPERATOR_DOMAIN;
 
 /**
  * <p>Assembly operator for a "Kafka" assembly, which manages:</p>
@@ -84,6 +84,8 @@ public class KafkaAssemblyOperator extends AbstractAssemblyOperator<KubernetesCl
     private final ServiceAccountOperator serviceAccountOperator;
     private final RoleBindingOperator roleBindingOperator;
     private final ClusterRoleBindingOperator clusterRoleBindingOperator;
+
+    public static final String ANNOTATION_MANUAL_RESTART = STRIMZI_CLUSTER_OPERATOR_DOMAIN + "/manual-rolling-update";
 
     /**
      * @param vertx The Vertx instance
@@ -304,10 +306,10 @@ public class KafkaAssemblyOperator extends AbstractAssemblyOperator<KubernetesCl
         }
 
         Future<ReconciliationState> kafkaManualRollingUpdate() {
-            String reason = "manual restart";
-            Future<StatefulSet> pp = kafkaSetOperations.getAsync(namespace, KafkaCluster.kafkaClusterName(name));
-            if (pp != null) {
-                return pp.compose(ss -> {
+            String reason = "manual rolling update";
+            Future<StatefulSet> futss = kafkaSetOperations.getAsync(namespace, KafkaCluster.kafkaClusterName(name));
+            if (futss != null) {
+                return futss.compose(ss -> {
                     if (ss != null) {
                         String value = ss.getMetadata().getAnnotations().get(ANNOTATION_MANUAL_RESTART);
                         if (value != null && value.equals("true")) {
@@ -322,10 +324,10 @@ public class KafkaAssemblyOperator extends AbstractAssemblyOperator<KubernetesCl
         }
 
         Future<ReconciliationState> zkManualRollingUpdate() {
-            String reason = "manual restart";
-            Future<StatefulSet> pp = zkSetOperations.getAsync(namespace, ZookeeperCluster.zookeeperClusterName(name));
-            if (pp != null) {
-                return pp.compose(ss -> {
+            String reason = "manual rolling update";
+            Future<StatefulSet> futss = zkSetOperations.getAsync(namespace, ZookeeperCluster.zookeeperClusterName(name));
+            if (futss != null) {
+                return futss.compose(ss -> {
                     if (ss != null) {
                         String value = ss.getMetadata().getAnnotations().get(ANNOTATION_MANUAL_RESTART);
                         if (value != null && value.equals("true")) {

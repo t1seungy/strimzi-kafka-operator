@@ -1,11 +1,11 @@
 // Module included in the following assemblies:
 //
-// assembly-using-the-user-operator.adoc
+// assembly-todo.adoc
 
 [id='proc-manual-restart-kafka-{context}']
 = Manually restart a Kafka cluster
 
-This procedure describes how to manually restart an existing Kafka cluster by using a {ProductPlatformName} annotation.
+This procedure describes how to manually restart an existing Kafka cluster by using an {ProductPlatformName} annotation.
 
 .Prerequisites
 
@@ -16,15 +16,7 @@ This procedure describes how to manually restart an existing Kafka cluster by us
 
 . Find the name of `StatefulSet` which controls Kafka pods to restart.
 +
-ifdef::Kubernetes[]
-On {KubernetesName} this can be done using `kubectl describe`:
-[source,shell,subs=+quotes]
-kubectl describe pod _pod-name_
-endif::Kubernetes[]
-
-On {OpenShiftName} this can be done using `oc describe`:
-[source,shell,subs=+quotes]
-oc describe pod _pod-name_
+Lets say the cluser is named _my-cluster_. The name of the Kafka StatefulSet is _my-cluster-kafka_.
 +
 
 . Annotate `StatefulSet` resource in {ProductPlatformName}.
@@ -32,14 +24,14 @@ oc describe pod _pod-name_
 ifdef::Kubernetes[]
 On {KubernetesName} this can be done using `kubectl apply`:
 [source,shell,subs=+quotes]
-kubectl annotate sts _cluster-name_-kafka cluster.operator.strimzi.io/manual-restart=true
+kubectl annotate statefulset _cluster-name_-kafka cluster.operator.strimzi.io/manual-rolling-update=true
 endif::Kubernetes[]
 +
 On {OpenShiftName} this can be done using `oc annotate`:
 [source,shell,subs=+quotes]
-oc annotate sts _cluster-name_-kafka cluster.operator.strimzi.io/manual-restart=true
+oc annotate statefulset _cluster-name_-kafka cluster.operator.strimzi.io/manual-rolling-update=true
 +
-. Wait for next reconciliation and all pods in annotated `StatefulSet` will be restarted.
+. Wait for next reconciliation and for all pods in annotated `StatefulSet` rolling update will be done.
 After all pods are restarted the annotation is removed from `StatefulSet`.
 
 
